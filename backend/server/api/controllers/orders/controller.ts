@@ -1,11 +1,15 @@
-import ProductsService from '../../services/products.service';
+import OrdersService from '../../services/orders.service';
 import { Request, Response } from 'express';
 
 export class Controller {
   create(req: Request, res: Response): void {
-    const { name, customerPrice, cost } = req.body;
-    ProductsService.create(name, customerPrice, cost).then((r) =>
-      res.status(201).location(`/api/v1/product/${r.id}`).json(r)
+    const { items, currency } = req.body;
+    const order = {
+      items,
+      currency,
+    };
+    OrdersService.create(order).then((r) =>
+      res.status(201).location(`/api/v1/orders`).json(r)
     );
   }
 }
