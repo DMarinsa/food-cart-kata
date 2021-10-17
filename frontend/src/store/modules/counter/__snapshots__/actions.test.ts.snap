@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Counter actions Decrement action 1`] = `
+Object {
+  "type": "DECREMENT_COUNTER",
+}
+`;
+
+exports[`Counter actions Increment action 1`] = `
+Object {
+  "type": "INCREMENT_COUNTER",
+}
+`;
+
+exports[`Counter actions Increment failure action 1`] = `
+Object {
+  "type": "INCREMENT_COUNTER_FAILURE",
+}
+`;
+
+exports[`Counter actions Increment request action 1`] = `
+Object {
+  "type": "INCREMENT_COUNTER_REQUEST",
+}
+`;
+
+exports[`Counter actions Increment success action 1`] = `
+Object {
+  "type": "INCREMENT_COUNTER_SUCCESS",
+}
+`;
