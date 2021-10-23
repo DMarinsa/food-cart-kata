@@ -2,6 +2,7 @@ import OrdersService from '../../services/orders.service';
 import { Request, Response } from 'express';
 
 export class Controller {
+  // TODO: add endpoint request validation joi, express-validator...
   create(req: Request, res: Response): void {
     const { items, currency } = req.body;
     const order = {
