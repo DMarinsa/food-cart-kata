@@ -1,5 +1,14 @@
 import L from '../../common/logger';
-import { Product } from './products.service';
+import { Product, ProductsService } from './products.service';
+
+type OrderedItemBody = Pick<Product, 'id'> & {
+  quantity: number;
+};
+
+interface OrderProductBody {
+  items: OrderedItemBody[];
+  currency: 'EUR' | 'USD';
+}
 
 type OrderedProduct = Product & {
   quantity: number;
@@ -48,7 +57,7 @@ class Order {
 
   private sumGrandTotal(): number {
     return this.items.reduce((acc, curr) => {
-      const priceWithoutSymbol = curr.totalPrice.slice(0, 1);
+      const priceWithoutSymbol = curr.totalPrice.substring(1);
       const castedPrice = Number.parseFloat(priceWithoutSymbol);
       return acc + castedPrice;
     }, 0);
@@ -56,14 +65,29 @@ class Order {
 }
 
 export class OrdersService {
-  async create(orderDto: OrderDto): Promise<Order> {
+  constructor(private productsService: ProductsService) {}
+  async create(body: OrderProductBody): Promise<Order> {
     L.info(
-      `create order with products ${orderDto.items.map(
-        (item) => `${item.name} `
-      )}`
+      `create order with products ${body.items.map((item) => `${item.id} `)}`
     );
+
+    const items = await Promise.all(
+      body.items.map(async (item) => {
+        const product = await this.productsService.byId(item.id);
+        return {
+          ...item,
+          ...product,
+        };
+      })
+    );
+    const orderDto = {
+      items,
+      currency: body.currency,
+    };
     return new Order(orderDto);
   }
 }
 
-export default new OrdersService();
+// This should be inyected
+
+export default new OrdersService(new ProductsService());
