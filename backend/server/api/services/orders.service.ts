@@ -1,68 +1,7 @@
 import L from '../../common/logger';
-import { Product, ProductsService } from './products.service';
-
-type OrderedItemBody = Pick<Product, 'id'> & {
-  quantity: number;
-};
-
-interface OrderProductBody {
-  items: OrderedItemBody[];
-  currency: 'EUR' | 'USD';
-}
-
-type OrderedProduct = Product & {
-  quantity: number;
-};
-
-interface OrderDto {
-  items: OrderedProduct[];
-  currency: string;
-}
-
-interface Item {
-  id: number;
-  name: string;
-  individualPrice: string;
-  totalPrice: string;
-}
-
-enum Currency {
-  EUR = 'EUR',
-  USD = 'USD',
-}
-
-enum CurrencySymbols {
-  EUR = '€',
-  USD = '$',
-}
-
-class Order {
-  readonly items: Item[] = [];
-  readonly grandTotal: number;
-  constructor(orderDto: OrderDto) {
-    const currencySymbol =
-      orderDto.currency === Currency.EUR
-        ? CurrencySymbols.EUR
-        : CurrencySymbols.USD;
-    orderDto.items.forEach((item: OrderedProduct) => {
-      this.items.push({
-        id: item.id,
-        name: item.name,
-        individualPrice: `${currencySymbol}${item.cost}`,
-        totalPrice: `${currencySymbol}${item.cost * item.quantity}`,
-      });
-    });
-    this.grandTotal = this.sumGrandTotal();
-  }
-
-  private sumGrandTotal(): number {
-    return this.items.reduce((acc, curr) => {
-      const priceWithoutSymbol = curr.totalPrice.substring(1);
-      const castedPrice = Number.parseFloat(priceWithoutSymbol);
-      return acc + castedPrice;
-    }, 0);
-  }
-}
+import { Order, OrderProductBody } from '../modules/orders/interfaces';
+import { Cart } from '../modules/orders/Cart';
+import { ProductsService } from './products.service';
 
 export class OrdersService {
   constructor(private productsService: ProductsService) {}
@@ -84,10 +23,12 @@ export class OrdersService {
       items,
       currency: body.currency,
     };
-    return new Order(orderDto);
+    const cart = new Cart(orderDto.currency);
+    items.forEach((item) => cart.addLine(item));
+    return cart.retrieveOrder();
   }
 }
 
-// This should be inyected
+// TODO: Use inversify, tsyringe or something similar instead of import.
 
 export default new OrdersService(new ProductsService());
