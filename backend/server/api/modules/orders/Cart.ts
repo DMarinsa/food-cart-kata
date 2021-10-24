@@ -9,7 +9,7 @@ import {
 export class Cart {
   readonly items: Item[] = [];
   grandTotal: number;
-  readonly discountedGrandTotal?: number;
+  discountedGrandTotal?: number;
   private currencySymbol: string;
   constructor(readonly currency: Currency) {
     this.currencySymbol =
@@ -20,7 +20,8 @@ export class Cart {
 
   private sumGrandTotal(): number {
     return this.items.reduce((acc, curr) => {
-      const priceWithoutSymbol = curr.totalPrice.substring(1);
+      const usedValue = curr.discountedPrice ? 'discountedPrice' : 'totalPrice';
+      const priceWithoutSymbol = curr[usedValue].substring(1);
       const castedPrice = Number.parseFloat(priceWithoutSymbol);
       return acc + castedPrice;
     }, 0);
@@ -29,9 +30,11 @@ export class Cart {
   addLine(item: OrderedProduct): void {
     this.items.push({
       id: item.id,
+      cost: item.cost,
+      individualPrice: `${this.currencySymbol}${item.customerPrice}`,
       name: item.name,
-      individualPrice: `${this.currencySymbol}${item.cost}`,
-      totalPrice: `${this.currencySymbol}${item.cost * item.quantity}`,
+      totalPrice: `${this.currencySymbol}${item.customerPrice * item.quantity}`,
+      quantity: item.quantity,
     });
   }
 
@@ -48,7 +51,9 @@ export class Cart {
 
     this.items.forEach((item) => {
       if (!['Soup', 'Bread'].includes(item.name)) return;
-      item.name === 'Soup' ? ++soupsCount : ++breadsCount;
+      item.name === 'Soup'
+        ? (soupsCount += item.quantity)
+        : (breadsCount += item.quantity);
     });
 
     const freeSoupLimit = Math.min(soupsCount, breadsCount, 3);
@@ -59,6 +64,8 @@ export class Cart {
         name: 'Free Soup',
         individualPrice: `${this.currencySymbol}0`,
         totalPrice: `${this.currencySymbol}0`,
+        cost: 0,
+        quantity: 1,
       });
     }
   }
@@ -67,30 +74,37 @@ export class Cart {
     if (day !== 0) return;
 
     let soupsCount = 0;
-    let breadsCount = 0;
-
     this.items.forEach((item) => {
-      if (!['Soup', 'Bread'].includes(item.name)) return;
-      item.name === 'Soup' ? ++soupsCount : ++breadsCount;
+      if (item.name === 'Soup') soupsCount++;
     });
+
+    if (soupsCount) this.discountedGrandTotal = this.grandTotal * 0.9;
   }
 
   private applyDairyDelicious(): void {
+    let cheeseCount = 0;
+    let milkCount = 0;
     for (const item of this.items) {
       if (item.name === 'Free Soup') return;
+      if (item.name === 'Cheese') ++cheeseCount;
+      if (item.name === 'Milk') ++milkCount;
     }
-    let soupsCount = 0;
-    let breadsCount = 0;
+    if (!cheeseCount && !milkCount) return;
 
-    this.items.forEach((item) => {
-      if (!['Soup', 'Bread'].includes(item.name)) return;
-      item.name === 'Soup' ? ++soupsCount : ++breadsCount;
-    });
+    for (const item of this.items) {
+      if (item.name === 'Milk') {
+        item.discountedPrice = `${this.currencySymbol}${item.cost}`;
+      }
+    }
   }
 
   retrieveOrder(): Order {
+    this.applyOffers();
     return {
-      items: this.items,
+      items: this.items.map((item) => {
+        delete item.cost;
+        return item;
+      }),
       grandTotal: this.sumGrandTotal(),
     };
   }

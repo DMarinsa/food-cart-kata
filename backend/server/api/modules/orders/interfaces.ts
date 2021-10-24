@@ -18,16 +18,31 @@ export interface OrderDto {
   currency: Currency;
 }
 
+export enum OfferName {
+  SoupAndBreadBOGOF = '_Soup And Bread BOGOF_',
+  SundaySoupSale = '_Sunday Soup Sale_',
+  DairyDelicious = '_Dairy Delicious_',
+}
+
+export enum OfferDescription {
+  SoupAndBreadBOGOF = 'Buy a loaf of bread and a can of soup and get another soup for free. Maximum 3 free soups per customer.',
+  SundaySoupSale = 'Buy any can of soup on a Sunday and get 10% off.',
+  DairyDelicious = "Buy a block of cheese and we'll let you buy as much milk as you like, at the price we pay! Offer not valid when the customer is participating in the Sunday Soup Sale.",
+}
+interface Offer {
+  name: OfferName;
+  description: OfferDescription;
+}
+
 export interface Item {
   id: number;
   name: string;
   individualPrice: string;
   totalPrice: string;
+  cost: number;
+  quantity: number;
+  appliedOffers?: Offer[];
   discountedPrice?: string;
-  appliedOffer?:
-    | '_Soup And Bread BOGOF_'
-    | '_Sunday Soup Sale_'
-    | '_Dairy Delicious_';
 }
 
 export enum Currency {
@@ -41,6 +56,6 @@ export enum CurrencySymbols {
 }
 
 export interface Order {
-  items: Item[];
+  items: Omit<Item, 'cost'>[];
   grandTotal: number;
 }
