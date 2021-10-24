@@ -29,7 +29,7 @@ export enum OfferDescription {
   SundaySoupSale = 'Buy any can of soup on a Sunday and get 10% off.',
   DairyDelicious = "Buy a block of cheese and we'll let you buy as much milk as you like, at the price we pay! Offer not valid when the customer is participating in the Sunday Soup Sale.",
 }
-interface Offer {
+export interface Offer {
   name: OfferName;
   description: OfferDescription;
 }
@@ -41,7 +41,6 @@ export interface Item {
   totalPrice: string;
   cost: number;
   quantity: number;
-  appliedOffers?: Offer[];
   discountedPrice?: string;
 }
 
@@ -58,4 +57,5 @@ export enum CurrencySymbols {
 export interface Order {
   items: Omit<Item, 'cost'>[];
   grandTotal: number;
+  appliedOffers?: Offer[];
 }
