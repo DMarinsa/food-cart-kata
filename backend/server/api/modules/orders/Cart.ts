@@ -4,6 +4,9 @@ import {
   CurrencySymbols,
   OrderedProduct,
   Order,
+  Offer,
+  OfferName,
+  OfferDescription,
 } from './interfaces';
 
 export class Cart {
@@ -11,6 +14,7 @@ export class Cart {
   grandTotal: number;
   discountedGrandTotal?: number;
   private currencySymbol: string;
+  appliedOffers: Offer[] = [];
   constructor(readonly currency: Currency) {
     this.currencySymbol =
       this.currency === Currency.EUR
@@ -58,6 +62,8 @@ export class Cart {
 
     const freeSoupLimit = Math.min(soupsCount, breadsCount, 3);
 
+    if (!freeSoupLimit) return;
+
     for (let i = 0; i < freeSoupLimit; i++) {
       this.items.push({
         id: 1,
@@ -68,6 +74,11 @@ export class Cart {
         quantity: 1,
       });
     }
+
+    this.appliedOffers.push({
+      name: OfferName.SoupAndBreadBOGOF,
+      description: OfferDescription.SoupAndBreadBOGOF,
+    });
   }
 
   private applySundaySoupSale(day: number): void {
@@ -75,17 +86,30 @@ export class Cart {
 
     let soupsCount = 0;
     this.items.forEach((item) => {
-      if (item.name === 'Soup') soupsCount++;
+      if (item.name === 'Soup') {
+        const priceWithoutSymbol = item.totalPrice.substring(1);
+        const castedPrice = Number.parseFloat(priceWithoutSymbol);
+        item.discountedPrice = `${this.currencySymbol}${castedPrice * 0.9}`;
+        soupsCount++;
+      }
     });
 
-    if (soupsCount) this.discountedGrandTotal = this.grandTotal * 0.9;
+    if (!soupsCount) return;
+    this.appliedOffers.push({
+      name: OfferName.SundaySoupSale,
+      description: OfferDescription.SundaySoupSale,
+    });
   }
 
   private applyDairyDelicious(): void {
     let cheeseCount = 0;
     let milkCount = 0;
+
+    if (this.sundaySaleSoupOfferIsApplied()) {
+      return;
+    }
+
     for (const item of this.items) {
-      if (item.name === 'Free Soup') return;
       if (item.name === 'Cheese') ++cheeseCount;
       if (item.name === 'Milk') ++milkCount;
     }
@@ -96,16 +120,34 @@ export class Cart {
         item.discountedPrice = `${this.currencySymbol}${item.cost}`;
       }
     }
+
+    this.appliedOffers.push({
+      name: OfferName.DairyDelicious,
+      description: OfferDescription.DairyDelicious,
+    });
   }
 
   retrieveOrder(): Order {
     this.applyOffers();
-    return {
+
+    const order: Order = {
       items: this.items.map((item) => {
         delete item.cost;
         return item;
       }),
       grandTotal: this.sumGrandTotal(),
     };
+
+    if (this.appliedOffers.length) order.appliedOffers = this.appliedOffers;
+
+    return order;
+  }
+
+  private sundaySaleSoupOfferIsApplied(): boolean {
+    const sundaySoupSaleOffer = this.appliedOffers.find(
+      (offer) => offer.name === OfferName.SundaySoupSale
+    );
+
+    return sundaySoupSaleOffer ? true : false;
   }
 }
